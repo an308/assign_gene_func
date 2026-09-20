@@ -1,3 +1,8 @@
+from Bio.Align import substitution_matrices
+import numpy as np
+
+GAP_PENALTY = -11 #check if this is correct
+
 def global_alignment(seq1, seq2, scoring_function):
     """Global sequence alignment using the Needleman–Wunsch algorithm.
 
@@ -28,7 +33,68 @@ def global_alignment(seq1, seq2, scoring_function):
     Other alignments are not possible.
 
     """
-    raise NotImplementedError()
+    num_rows = len(seq2) + 1
+    num_cols = len(seq1) + 1
+    nw_matrix = np.zeros((num_rows, num_cols))
+
+    nw_matrix[0, :] = np.arange(num_cols) * GAP_PENALTY
+    nw_matrix[:, 0] = np.arange(num_rows) * GAP_PENALTY
+
+    traceback = np.zeros((num_rows, num_cols), dtype=object)
+
+    # populate nw_matrix with scores & traceback matrix with predecessor's coordinates
+
+    for i in range(1, num_rows):
+        for j in range(1, num_cols):
+            match = nw_matrix[i-1, j-1] + scoring_function(seq2[i-1], seq1[j-1])
+            insertion = nw_matrix[i-1, j] + GAP_PENALTY
+            deletion = nw_matrix[i, j-1] + GAP_PENALTY
+
+            max_score = max(match, insertion, deletion)
+            nw_matrix[i, j] = max_score
+
+            if match == max_score:
+                traceback[i, j] = (i-1, j-1)
+            elif insertion == max_score:
+                traceback[i, j] = (i-1, j)
+            else: # deletion
+                traceback[i, j] = (i, j-1)
+
+    i = num_rows - 1
+    j = num_cols - 1
+    aligned_seq1 = []
+    aligned_seq2 = []
+
+    # traceback to get alignemnts
+
+    while (i > 0 or j > 0):
+        
+        ip, jp = traceback[i, j]
+
+        if i == ip: # deletion --> move left (i didn't change)
+            aligned_seq1.append(seq1[j-1])
+            aligned_seq2.append("-")
+            j = jp
+        elif j == jp: # insertion --> move up (j didn't change)
+            aligned_seq1.append("-")
+            aligned_seq2.append(seq2[i-1])
+            i = ip
+        else: # match/mismatch --> move diagonally (both i & j changed)
+            aligned_seq1.append(seq1[j-1])
+            aligned_seq2.append(seq2[i-1])
+            i = ip
+            j = jp
+
+    aligned_seq1.reverse()
+    aligned_seq2.reverse()
+    
+    aligned_seq1 = "".join(aligned_seq1)
+    aligned_seq2 = "".join(aligned_seq2)
+
+    return (aligned_seq1, aligned_seq2, nw_matrix[-1, -1])
+
+
+
 
 
 def local_alignment(seq1, seq2, scoring_function):
@@ -64,7 +130,17 @@ def local_alignment(seq1, seq2, scoring_function):
     raise NotImplementedError()
 
 
-## This is an example scoring function, you should implement a version which uses a scoring matrix 
-def scoring_function_simple(aa_i,aa_j):
-    score = [-1, 1][aa_i == aa_j]
-    return (score)
+
+def scoring_function(aa_i,aa_j):
+    sub_matrix = substitution_matrices.load("BLOSUM62")
+    return(sub_matrix[aa_i.upper(), aa_j.upper()])
+
+
+# testing
+
+def main():
+    x, y, score = global_alignment("abracadabra", "dabarakadara", scoring_function)
+    print(x, y, scoring_function)
+
+if __name__ == "__main__":
+    main()
