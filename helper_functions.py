@@ -1,7 +1,7 @@
 from Bio.Align import substitution_matrices
 import numpy as np
 
-GAP_PENALTY = -11 #check if this is correct
+GAP_PENALTY = -8
 
 def global_alignment(seq1, seq2, scoring_function):
     """Global sequence alignment using the Needleman–Wunsch algorithm.
