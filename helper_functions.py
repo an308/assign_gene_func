@@ -138,18 +138,8 @@ def local_alignment(seq1, seq2, scoring_function):
     """
     raise NotImplementedError()
 
-
+sub_matrix = substitution_matrices.load("BLOSUM62")
 
 def scoring_function(aa_i,aa_j):
-    sub_matrix = substitution_matrices.load("BLOSUM62")
     return(sub_matrix[aa_i.upper(), aa_j.upper()])
 
-
-# testing (GAP_PENALTY = -1 and simple_scoring_function)
-
-# def main():
-#     x, y, score = global_alignment("abracadabra", "dabarakadara", scoring_function)
-#     print(x, y, score)
-
-# if __name__ == "__main__":
-#     main()
