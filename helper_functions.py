@@ -136,7 +136,64 @@ def local_alignment(seq1, seq2, scoring_function):
     Other alignments are not possible.
 
     """
-    raise NotImplementedError()
+    num_rows = len(seq2) + 1
+    num_cols = len(seq1) + 1
+    
+    sw_matrix = np.zeros((num_rows, num_cols))
+    traceback = np.zeros((num_rows, num_cols), dtype=object)
+
+    for i in range(1, num_rows):
+        for j in range(1, num_cols):
+            match = sw_matrix[i-1, j-1] + scoring_function(seq2[i-1], seq1[j-1])
+            insertion = sw_matrix[i-1, j] + GAP_PENALTY
+            deletion = sw_matrix[i, j-1] + GAP_PENALTY
+
+            max_score = max(match, insertion, deletion, 0)
+            sw_matrix[i, j] = max_score
+            
+            if max_score == 0:
+                continue  
+            elif deletion == max_score:
+                traceback[i, j] = (i, j-1)  
+            elif insertion == max_score:
+                traceback[i, j] = (i-1, j)
+            elif match == max_score:
+                traceback[i, j] = (i-1, j-1)   
+
+    i, j = np.unravel_index(sw_matrix.argmax(), sw_matrix.shape)
+    aligned_seq1 = []
+    aligned_seq2 = []
+
+    # traceback to get alignemnts
+
+    while sw_matrix[i, j] != 0:
+
+        ip, jp = traceback[i, j]
+
+        if i == ip: # deletion --> move left (i didn't change)
+            aligned_seq1.append(seq1[j-1])
+            aligned_seq2.append("-")
+            j = jp
+        elif j == jp: # insertion --> move up (j didn't change)
+            aligned_seq1.append("-")
+            aligned_seq2.append(seq2[i-1])
+            i = ip
+        else: # match/mismatch --> move diagonally (both i & j changed)
+            aligned_seq1.append(seq1[j-1])
+            aligned_seq2.append(seq2[i-1])
+            i = ip
+            j = jp
+
+
+    aligned_seq1.reverse()
+    aligned_seq2.reverse()
+    
+    aligned_seq1 = "".join(aligned_seq1)
+    aligned_seq2 = "".join(aligned_seq2)
+
+    return (aligned_seq1, aligned_seq2, sw_matrix.max())
+
+
 
 sub_matrix = substitution_matrices.load("BLOSUM62")
 
